@@ -28,8 +28,8 @@ class DiffFile:
     """Stable file metadata plus parser state needed by native rendering."""
 
     path: str
-    source_path: Path
-    target_path: Path
+    source_path: Path | None
+    target_path: Path | None
     kind: ChangeKind
     additions: int
     deletions: int
@@ -57,19 +57,31 @@ def _change_kind(patch: PatchedFile) -> ChangeKind:
     return ChangeKind.MODIFIED
 
 
+def _project_path(path: str, project_root: Path) -> Path | None:
+    """Return a project path, preserving ``/dev/null`` as an absent-side sentinel."""
+    if path == "/dev/null":
+        return None
+    relative_path = Path(path.removeprefix("a/").removeprefix("b/"))
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        raise DiffParseError(f"unsafe patch path: {path}")
+    return project_root / relative_path
+
+
 def parse_diff(text: str, project_root: Path) -> DiffSet:
     """Parse unified text into file models rooted at ``project_root``."""
     if not text.strip():
         return DiffSet(files=())
     try:
         patches = PatchSet(text)
-    except (UnidiffParseError, ValueError) as error:
+    except (UnidiffParseError, UnboundLocalError, ValueError) as error:
         raise DiffParseError(str(error)) from error
+    if not patches:
+        raise DiffParseError("input contains no parsed patches")
     files = tuple(
         DiffFile(
             path=patch.path,
-            source_path=project_root / patch.source_file.removeprefix("a/"),
-            target_path=project_root / patch.target_file.removeprefix("b/"),
+            source_path=_project_path(path=patch.source_file, project_root=project_root),
+            target_path=_project_path(path=patch.target_file, project_root=project_root),
             kind=_change_kind(patch),
             additions=patch.added,
             deletions=patch.removed,

@@ -2,7 +2,9 @@
 
 from pathlib import Path
 
-from dunkr.models import ChangeKind, parse_diff
+import pytest
+
+from dunkr.models import ChangeKind, DiffParseError, parse_diff
 
 
 MODIFIED_DIFF = """\
@@ -41,6 +43,7 @@ def test_parse_added_file(tmp_path: Path) -> None:
     text = "--- /dev/null\n+++ b/new.py\n@@ -0,0 +1 @@\n+new = True\n"
     file = parse_diff(text=text, project_root=tmp_path).files[0]
     assert file.kind is ChangeKind.ADDED
+    assert file.source_path is None
     assert file.target_path == tmp_path / "new.py"
     assert not file.is_binary
 
@@ -51,6 +54,7 @@ def test_parse_deleted_file(tmp_path: Path) -> None:
     file = parse_diff(text=text, project_root=tmp_path).files[0]
     assert file.kind is ChangeKind.DELETED
     assert file.source_path == tmp_path / "old.py"
+    assert file.target_path is None
     assert not file.is_binary
 
 
@@ -69,3 +73,23 @@ def test_parse_binary_file(tmp_path: Path) -> None:
     file = parse_diff(text=text, project_root=tmp_path).files[0]
     assert file.kind is ChangeKind.BINARY
     assert file.is_binary
+
+
+@pytest.mark.parametrize("text", ("+++ b/x\n", "not a diff"))
+def test_parse_diff_rejects_malformed_or_patchless_input(
+    text: str, tmp_path: Path
+) -> None:
+    """Raise an application error for nonempty input without parsed patches."""
+    with pytest.raises(DiffParseError):
+        parse_diff(text=text, project_root=tmp_path)
+
+
+@pytest.mark.parametrize("path", ("../../outside.py", "/tmp/outside.py"))
+def test_parse_diff_rejects_paths_outside_project_root(
+    path: str, tmp_path: Path
+) -> None:
+    """Reject traversal and absolute paths supplied by a parsed patch."""
+    text = f"--- a/{path}\n+++ b/{path}\n@@ -1 +1 @@\n-old\n+new\n"
+
+    with pytest.raises(DiffParseError):
+        parse_diff(text=text, project_root=tmp_path)
