@@ -1,3 +1,4 @@
 .idea
 dunk/__pycache__
 dist
+.worktrees/
