@@ -1,5 +1,5 @@
 [project]
-name = "dunk"
+name = "dunkr"
 version = "0.5.0b0"
 description = "Beautiful side-by-side diffs in your terminal"
 authors = [
@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.scripts]
-dunk = "dunk.dunk:main"
+dunkr = "dunkr.cli:main"
 
 [project.urls]
 homepage = "https://github.com/darrenburns/dunk"
@@ -44,7 +44,7 @@ dev = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["dunk"]
+packages = ["dunkr"]
 
 [build-system]
 requires = ["hatchling"]
