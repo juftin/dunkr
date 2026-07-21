@@ -57,11 +57,11 @@ def _change_kind(patch: PatchedFile) -> ChangeKind:
     return ChangeKind.MODIFIED
 
 
-def _project_path(path: str, project_root: Path) -> Path | None:
+def _project_path(path: str, prefix: str, project_root: Path) -> Path | None:
     """Return a project path, preserving ``/dev/null`` as an absent-side sentinel."""
     if path == "/dev/null":
         return None
-    relative_path = Path(path.removeprefix("a/").removeprefix("b/"))
+    relative_path = Path(path.removeprefix(prefix))
     if relative_path.is_absolute() or ".." in relative_path.parts:
         raise DiffParseError(f"unsafe patch path: {path}")
     return project_root / relative_path
@@ -80,8 +80,12 @@ def parse_diff(text: str, project_root: Path) -> DiffSet:
     files = tuple(
         DiffFile(
             path=patch.path,
-            source_path=_project_path(path=patch.source_file, project_root=project_root),
-            target_path=_project_path(path=patch.target_file, project_root=project_root),
+            source_path=_project_path(
+                path=patch.source_file, prefix="a/", project_root=project_root
+            ),
+            target_path=_project_path(
+                path=patch.target_file, prefix="b/", project_root=project_root
+            ),
             kind=_change_kind(patch),
             additions=patch.added,
             deletions=patch.removed,

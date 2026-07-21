@@ -33,6 +33,16 @@ def test_parse_diff_exposes_file_metadata(tmp_path: Path) -> None:
     assert file.target_path == tmp_path / "example.py"
 
 
+def test_parse_diff_preserves_repository_b_path_component(tmp_path: Path) -> None:
+    """Retain a real leading ``b`` directory after stripping diff prefixes."""
+    text = "--- a/b/example.py\n+++ b/b/example.py\n@@ -1 +1 @@\n-old\n+new\n"
+
+    file = parse_diff(text=text, project_root=tmp_path).files[0]
+
+    assert file.source_path == tmp_path / "b/example.py"
+    assert file.target_path == tmp_path / "b/example.py"
+
+
 def test_parse_diff_accepts_empty_input(tmp_path: Path) -> None:
     """Represent an empty working tree without raising an error."""
     assert parse_diff(text="", project_root=tmp_path).files == ()
