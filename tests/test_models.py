@@ -1,0 +1,71 @@
+"""Tests for application-owned diff models."""
+
+from pathlib import Path
+
+from dunkr.models import ChangeKind, parse_diff
+
+
+MODIFIED_DIFF = """\
+diff --git a/example.py b/example.py
+index 0000000..1111111 100644
+--- a/example.py
++++ b/example.py
+@@ -1 +1 @@
+-print("before")
++print("after")
+"""
+
+
+def test_parse_diff_exposes_file_metadata(tmp_path: Path) -> None:
+    """Expose stable metadata without requiring widgets to inspect unidiff."""
+    (tmp_path / "example.py").write_text('print("after")\n')
+
+    diff_set = parse_diff(text=MODIFIED_DIFF, project_root=tmp_path)
+
+    assert len(diff_set.files) == 1
+    file = diff_set.files[0]
+    assert file.path == "example.py"
+    assert file.kind is ChangeKind.MODIFIED
+    assert file.additions == 1
+    assert file.deletions == 1
+    assert file.target_path == tmp_path / "example.py"
+
+
+def test_parse_diff_accepts_empty_input(tmp_path: Path) -> None:
+    """Represent an empty working tree without raising an error."""
+    assert parse_diff(text="", project_root=tmp_path).files == ()
+
+
+def test_parse_added_file(tmp_path: Path) -> None:
+    """Classify a /dev/null source as an added file."""
+    text = "--- /dev/null\n+++ b/new.py\n@@ -0,0 +1 @@\n+new = True\n"
+    file = parse_diff(text=text, project_root=tmp_path).files[0]
+    assert file.kind is ChangeKind.ADDED
+    assert file.target_path == tmp_path / "new.py"
+    assert not file.is_binary
+
+
+def test_parse_deleted_file(tmp_path: Path) -> None:
+    """Classify a /dev/null target as a deleted file."""
+    text = "--- a/old.py\n+++ /dev/null\n@@ -1 +0,0 @@\n-old = True\n"
+    file = parse_diff(text=text, project_root=tmp_path).files[0]
+    assert file.kind is ChangeKind.DELETED
+    assert file.source_path == tmp_path / "old.py"
+    assert not file.is_binary
+
+
+def test_parse_renamed_file(tmp_path: Path) -> None:
+    """Expose both paths for a pure rename."""
+    text = "diff --git a/old.py b/new.py\nsimilarity index 100%\nrename from old.py\nrename to new.py\n"
+    file = parse_diff(text=text, project_root=tmp_path).files[0]
+    assert file.kind is ChangeKind.RENAMED
+    assert file.source_path == tmp_path / "old.py"
+    assert file.target_path == tmp_path / "new.py"
+
+
+def test_parse_binary_file(tmp_path: Path) -> None:
+    """Classify Git's binary marker without reading file content."""
+    text = "diff --git a/image.png b/image.png\nBinary files a/image.png and b/image.png differ\n"
+    file = parse_diff(text=text, project_root=tmp_path).files[0]
+    assert file.kind is ChangeKind.BINARY
+    assert file.is_binary
