@@ -93,7 +93,9 @@ class DunkrApp(App[None]):
             self.query_one(DiffView).show_file(
                 self.diff_set.files[event.list_view.index]
             )
-            self.query_one("#diff-scroll", VerticalScroll).scroll_home(animate=False)
+            self.query_one("#diff-scroll", VerticalScroll).scroll_home(
+                animate=False, immediate=True
+            )
 
     def action_toggle_sidebar(self) -> None:
         """Toggle the file sidebar without changing selection."""
