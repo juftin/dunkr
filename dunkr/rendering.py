@@ -5,6 +5,7 @@ from difflib import SequenceMatcher
 from itertools import zip_longest
 from typing import Iterable
 
+from pygments.util import ClassNotFound
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.rule import Rule
 from rich.style import Style
@@ -38,36 +39,16 @@ class FileDiffRenderable:
             return
         if self.file.kind is ChangeKind.DELETED:
             yield Text("File was deleted", style="bold red")
-        elif self.file.kind is ChangeKind.RENAMED and len(self.file.patch) == 0:
-            source_name = (
-                self.file.source_path.name
-                if self.file.source_path is not None
-                else self.file.path
+        elif self.file.kind is ChangeKind.RENAMED:
+            source_name = self.file.source_display_path or self.file.path
+            target_name = self.file.target_display_path or self.file.path
+            yield Text(
+                f"Renamed: {source_name} → {target_name}",
+                style="cyan",
             )
-            target_name = (
-                self.file.target_path.name
-                if self.file.target_path is not None
-                else self.file.path
-            )
-            yield Text(f"Renamed: {source_name} → {target_name}", style="cyan")
-            return
-        else:
-            target_error = _target_read_error(file=self.file)
-            if target_error is not None:
-                yield Text(target_error, style="bold red")
+            if len(self.file.patch) == 0:
                 return
         yield from _render_hunks(file=self.file, width=options.max_width)
-
-
-def _target_read_error(file: DiffFile) -> str | None:
-    """Return a local rendering error when a text target cannot be read."""
-    if file.target_path is None:
-        return f"Unable to read target file: {file.path}"
-    try:
-        file.target_path.read_text()
-    except (OSError, UnicodeError):
-        return f"Unable to read target file: {file.path}"
-    return None
 
 
 def _flush_changed_lines(
@@ -87,6 +68,8 @@ def _paired_rows(hunk: Hunk) -> list[tuple[Line | None, Line | None]]:
             removed.append(line)
         elif line.is_added:
             added.append(line)
+        elif line.line_type == "\\":
+            continue
         else:
             rows.extend(_flush_changed_lines(removed, added))
             removed.clear()
@@ -115,7 +98,7 @@ def _code_cell(
     *,
     line: Line | None,
     line_number: int | None,
-    path: str,
+    lexer: str,
     background: str | None,
     emphasis_background: str,
     ranges: tuple[tuple[int, int], ...],
@@ -124,10 +107,6 @@ def _code_cell(
     if line is None:
         return Text()
     value = line.value.rstrip("\n")
-    try:
-        lexer = Syntax.guess_lexer(path)
-    except Exception:
-        lexer = "text"
     code = Syntax(value, lexer=lexer, word_wrap=True).highlight(value)
     if background is not None:
         code.stylize(Style(bgcolor=background))
@@ -140,6 +119,10 @@ def _code_cell(
 
 def _render_hunks(file: DiffFile, width: int) -> Iterable[object]:
     """Yield width-aware side-by-side tables for every hunk."""
+    try:
+        lexer = Syntax.guess_lexer(file.target_display_path or file.path)
+    except ClassNotFound:
+        lexer = "text"
     for hunk in file.patch:
         yield Text(
             f"@@ -{hunk.source_start},{hunk.source_length} "
@@ -159,7 +142,7 @@ def _render_hunks(file: DiffFile, width: int) -> Iterable[object]:
                 _code_cell(
                     line=source,
                     line_number=(source.source_line_no if source is not None else None),
-                    path=file.path,
+                    lexer=lexer,
                     background=(
                         "#3b1f24" if source is not None and source.is_removed else None
                     ),
@@ -169,7 +152,7 @@ def _render_hunks(file: DiffFile, width: int) -> Iterable[object]:
                 _code_cell(
                     line=target,
                     line_number=(target.target_line_no if target is not None else None),
-                    path=file.path,
+                    lexer=lexer,
                     background=(
                         "#183c2b" if target is not None and target.is_added else None
                     ),

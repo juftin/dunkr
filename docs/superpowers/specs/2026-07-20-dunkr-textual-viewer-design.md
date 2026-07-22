@@ -54,7 +54,7 @@ Selecting a file emits a Textual message. `DunkrApp` updates its selected-file s
 
 The selected file renders as a side-by-side source and target presentation with line numbers, syntax highlighting, changed-line backgrounds, and intraline emphasis. Existing highlighting algorithms may be retained when they can operate on Rich segments without terminal serialization.
 
-Only the selected file is rendered. This bounds rendering work and makes the sidebar the single file-navigation mechanism.
+Only the selected file is rendered, directly from parsed patch content without reading the target working-tree file. This bounds rendering work and makes the sidebar the single file-navigation mechanism.
 
 ### Responsive Behavior
 
@@ -76,7 +76,6 @@ No interaction mutates the repository or index.
 - A malformed piped diff exits with a concise parse error.
 - Deleted and binary files show descriptive content rather than attempting source-code rendering.
 - Pure renames show the old and new paths and indicate that no content changed.
-- A target file that cannot be read produces an error view for that file while leaving the rest of the application usable.
 - A failed implicit `git diff` prints Git's diagnostic and exits nonzero.
 
 ## Rename

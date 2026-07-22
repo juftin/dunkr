@@ -70,11 +70,36 @@ def test_parse_deleted_file(tmp_path: Path) -> None:
 
 def test_parse_renamed_file(tmp_path: Path) -> None:
     """Expose both paths for a pure rename."""
-    text = "diff --git a/old.py b/new.py\nsimilarity index 100%\nrename from old.py\nrename to new.py\n"
+    text = (
+        "diff --git a/pkg/old/name.py b/pkg/new/name.py\n"
+        "similarity index 100%\n"
+        "rename from pkg/old/name.py\n"
+        "rename to pkg/new/name.py\n"
+    )
     file = parse_diff(text=text, project_root=tmp_path).files[0]
     assert file.kind is ChangeKind.RENAMED
-    assert file.source_path == tmp_path / "old.py"
-    assert file.target_path == tmp_path / "new.py"
+    assert file.source_path == tmp_path / "pkg/old/name.py"
+    assert file.target_path == tmp_path / "pkg/new/name.py"
+
+
+def test_parse_diff_decodes_git_c_quoted_utf8_path(tmp_path: Path) -> None:
+    """Decode Git's octal UTF-8 and escaped special characters before mapping."""
+    text = (
+        'diff --git "a/docs/caf\\303\\251\\t\\"quoted\\".py" '
+        '"b/docs/caf\\303\\251\\t\\"quoted\\".py"\n'
+        '--- "a/docs/caf\\303\\251\\t\\"quoted\\".py"\n'
+        '+++ "b/docs/caf\\303\\251\\t\\"quoted\\".py"\n'
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+    )
+    repository_path = 'docs/café\t"quoted".py'
+
+    file = parse_diff(text=text, project_root=tmp_path).files[0]
+
+    assert file.path == repository_path
+    assert file.source_path == tmp_path / repository_path
+    assert file.target_path == tmp_path / repository_path
 
 
 def test_parse_binary_file(tmp_path: Path) -> None:
@@ -83,6 +108,12 @@ def test_parse_binary_file(tmp_path: Path) -> None:
     file = parse_diff(text=text, project_root=tmp_path).files[0]
     assert file.kind is ChangeKind.BINARY
     assert file.is_binary
+
+
+def test_parse_diff_normalizes_truncated_git_binary_patch(tmp_path: Path) -> None:
+    """Convert unidiff's truncated binary marker failure into a parse error."""
+    with pytest.raises(DiffParseError):
+        parse_diff(text="GIT binary patch\n", project_root=tmp_path)
 
 
 @pytest.mark.parametrize("text", ("+++ b/x\n", "not a diff"))

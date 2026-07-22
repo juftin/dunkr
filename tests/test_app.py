@@ -3,6 +3,7 @@
 import asyncio
 from pathlib import Path
 
+from textual.containers import VerticalScroll
 from textual.geometry import Region
 from textual.widget import Widget
 
@@ -89,6 +90,62 @@ def test_sidebar_binding_toggles_visibility(tmp_path: Path) -> None:
             return hidden, restored
 
     assert asyncio.run(run_app()) == (True, True)
+
+
+def test_sidebar_binding_is_safe_for_empty_diff(tmp_path: Path) -> None:
+    """Treat the sidebar binding as a no-op when there is no file list."""
+
+    async def run_app() -> str:
+        """Press b in the empty state and return its visible message."""
+        app = DunkrApp(diff="", project_root=tmp_path)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await pilot.press("b")
+            await pilot.pause()
+            return _widget_text(widget=app.query_one("#empty"))
+
+    assert "No changes" in asyncio.run(run_app())
+
+
+def test_file_selection_scrolls_new_diff_to_home(tmp_path: Path) -> None:
+    """Start each newly selected file at the top of its diff."""
+    line_count = 80
+
+    def file_patch(name: str) -> str:
+        """Build one long changed-file patch that requires scrolling."""
+        removed = "".join(f"-{name}_{index} = 1\n" for index in range(line_count))
+        added = "".join(f"+{name}_{index} = 2\n" for index in range(line_count))
+        return (
+            f"diff --git a/{name}.py b/{name}.py\n"
+            f"--- a/{name}.py\n"
+            f"+++ b/{name}.py\n"
+            f"@@ -1,{line_count} +1,{line_count} @@\n"
+            f"{removed}{added}"
+        )
+
+    text = file_patch("one") + file_patch("two")
+    (tmp_path / "one.py").write_text(
+        "".join(f"one_{index} = 2\n" for index in range(line_count))
+    )
+    (tmp_path / "two.py").write_text(
+        "".join(f"two_{index} = 2\n" for index in range(line_count))
+    )
+
+    async def run_app() -> tuple[int, int]:
+        """Scroll the first diff, select the second, and return both offsets."""
+        app = DunkrApp(diff=text, project_root=tmp_path)
+        async with app.run_test(size=(120, 20)) as pilot:
+            await pilot.pause()
+            scroll = app.query_one("#diff-scroll", VerticalScroll)
+            scroll.scroll_end(animate=False)
+            await pilot.pause()
+            before = scroll.scroll_offset.y
+            app.query_one(FileSidebar).index = 1
+            await pilot.pause()
+            return before, scroll.scroll_offset.y
+
+    before, after = asyncio.run(run_app())
+    assert before > 0
+    assert after == 0
 
 
 def test_selected_diff_survives_resize(tmp_path: Path) -> None:

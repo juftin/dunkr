@@ -2,6 +2,14 @@
 
 A rich, interactive side-by-side Git diff viewer built with Textual.
 
+## Installation
+
+Install `dunkr` in an isolated environment with [pipx](https://pipx.pypa.io/):
+
+```console
+pipx install dunkr
+```
+
 ## Usage
 
 ```console
