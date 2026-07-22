@@ -55,9 +55,7 @@ class UnderlineBar:
         half_start = start - int(start) > 0
         half_end = end - int(end) > 0
 
-        output_bar.append(
-            Text(bar * int(start - 0.5), style=background_style, end="")
-        )
+        output_bar.append(Text(bar * int(start - 0.5), style=background_style, end=""))
         if not half_start and start > 0:
             output_bar.append(Text(half_bar_right, style=background_style, end=""))
 

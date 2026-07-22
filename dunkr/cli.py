@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, TextIO
 
+from dunkr.models import DiffParseError
+
 
 class InputError(RuntimeError):
     """Report input that cannot be obtained or parsed."""
@@ -52,9 +54,10 @@ def main() -> int:
 
     try:
         diff = read_diff(stdin=sys.stdin, cwd=Path.cwd())
-    except InputError as error:
+        app = DunkrApp(diff=diff, project_root=Path.cwd())
+    except (DiffParseError, InputError) as error:
         print(f"dunkr: {error}", file=sys.stderr)
         return 1
     with terminal_input(sys.stdin):
-        DunkrApp(diff=diff, project_root=Path.cwd()).run()
+        app.run()
     return 0

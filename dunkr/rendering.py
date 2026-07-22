@@ -154,34 +154,24 @@ def _render_hunks(file: DiffFile, width: int) -> Iterable[object]:
         for source, target in _paired_rows(hunk):
             source_value = source.value.rstrip("\n") if source is not None else ""
             target_value = target.value.rstrip("\n") if target is not None else ""
-            source_ranges, target_ranges = _changed_ranges(
-                source_value, target_value
-            )
+            source_ranges, target_ranges = _changed_ranges(source_value, target_value)
             table.add_row(
                 _code_cell(
                     line=source,
-                    line_number=(
-                        source.source_line_no if source is not None else None
-                    ),
+                    line_number=(source.source_line_no if source is not None else None),
                     path=file.path,
                     background=(
-                        "#3b1f24"
-                        if source is not None and source.is_removed
-                        else None
+                        "#3b1f24" if source is not None and source.is_removed else None
                     ),
                     emphasis_background="#6b3340",
                     ranges=source_ranges,
                 ),
                 _code_cell(
                     line=target,
-                    line_number=(
-                        target.target_line_no if target is not None else None
-                    ),
+                    line_number=(target.target_line_no if target is not None else None),
                     path=file.path,
                     background=(
-                        "#183c2b"
-                        if target is not None and target.is_added
-                        else None
+                        "#183c2b" if target is not None and target.is_added else None
                     ),
                     emphasis_background="#245a3e",
                     ranges=target_ranges,

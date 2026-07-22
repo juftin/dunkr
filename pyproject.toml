@@ -30,10 +30,10 @@ dependencies = [
 dunkr = "dunkr.cli:main"
 
 [project.urls]
-homepage = "https://github.com/darrenburns/dunk"
-repository = "https://github.com/darrenburns/dunk"
-issues = "https://github.com/darrenburns/dunk/issues"
-documentation = "https://github.com/darrenburns/dunk/blob/main/README.md"
+homepage = "https://github.com/darrenburns/dunkr"
+repository = "https://github.com/darrenburns/dunkr"
+issues = "https://github.com/darrenburns/dunkr/issues"
+documentation = "https://github.com/darrenburns/dunkr/blob/main/README.md"
 
 [dependency-groups]
 dev = [

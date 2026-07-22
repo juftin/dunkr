@@ -2,10 +2,12 @@
 
 import io
 import subprocess
+import sys
 from pathlib import Path
+
 import pytest
 
-from dunkr.cli import InputError, read_diff
+from dunkr.cli import InputError, main, read_diff
 
 
 class FakeStdin(io.StringIO):
@@ -48,9 +50,22 @@ def test_read_diff_reports_git_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     """Convert a failed implicit Git invocation into a CLI error."""
     stdin = FakeStdin(is_terminal=True)
     completed = subprocess.CompletedProcess(
-        args=["git", "diff", "--no-color"], returncode=128, stdout="", stderr="not a repo"
+        args=["git", "diff", "--no-color"],
+        returncode=128,
+        stdout="",
+        stderr="not a repo",
     )
     monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: completed)
 
     with pytest.raises(InputError, match="not a repo"):
         read_diff(stdin=stdin, cwd=Path("/repo"))
+
+
+def test_main_reports_a_malformed_piped_diff(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Exit concisely when piped input is not a unified diff."""
+    monkeypatch.setattr(sys, "stdin", FakeStdin("not a diff"))
+
+    assert main() == 1
+    assert capsys.readouterr().err == ("dunkr: input contains no parsed patches\n")
