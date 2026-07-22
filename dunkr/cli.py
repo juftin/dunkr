@@ -104,8 +104,10 @@ def main() -> int:
 
     try:
         cwd = Path.cwd()
-        diff = read_diff(stdin=sys.stdin, cwd=cwd)
-        app = DunkrApp(diff=diff, project_root=resolve_project_root(cwd=cwd))
+        stdin = sys.stdin
+        diff = read_diff(stdin=stdin, cwd=cwd)
+        project_root = resolve_project_root(cwd=cwd) if stdin.isatty() else cwd
+        app = DunkrApp(diff=diff, project_root=project_root)
     except (DiffParseError, InputError) as error:
         print(f"dunkr: {error}", file=sys.stderr)
         return 1

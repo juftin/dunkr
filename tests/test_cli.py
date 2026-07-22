@@ -126,23 +126,59 @@ def test_main_reports_git_launch_failure(
     )
 
 
-def test_main_maps_paths_from_git_root_when_invoked_in_nested_directory(
+def test_main_launches_piped_diff_outside_repository_without_git(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Root parsed repository paths at Git's top level from a nested cwd."""
+    """Launch a valid piped diff without requiring a Git repository."""
+    outside_repository = tmp_path / "outside"
+    outside_repository.mkdir()
+    launched: list[DunkrApp] = []
+
+    def unexpected_run(*args: object, **kwargs: object) -> None:
+        """Fail if externally supplied diff input invokes Git."""
+        raise AssertionError("Git must not run for piped input")
+
+    def record_run(app: DunkrApp) -> None:
+        """Capture the initialized application without launching Textual."""
+        launched.append(app)
+
+    monkeypatch.chdir(outside_repository)
+    monkeypatch.setattr(sys, "stdin", FakeStdin(MODIFIED_DIFF))
+    monkeypatch.setattr(subprocess, "run", unexpected_run)
+    monkeypatch.setattr(cli, "terminal_input", lambda stdin: nullcontext())
+    monkeypatch.setattr(DunkrApp, "run", record_run)
+
+    assert main() == 0
+    assert launched[0].diff_set.files[0].target_path == (
+        outside_repository / "example.py"
+    )
+
+
+def test_main_maps_implicit_diff_paths_from_git_root_when_invoked_nested(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Root implicit Git diff paths at Git's top level from a nested cwd."""
     repository = tmp_path / "repository"
     nested = repository / "src" / "package"
     nested.mkdir(parents=True)
     launched: list[DunkrApp] = []
+    commands: list[list[str]] = []
 
     def completed_run(
         *args: object, **kwargs: object
     ) -> subprocess.CompletedProcess[str]:
-        """Return the repository root for Git's top-level query."""
-        assert args[0] == ["git", "rev-parse", "--show-toplevel"]
+        """Return the implicit diff and repository root for each Git query."""
+        command = args[0]
+        assert isinstance(command, list)
+        commands.append(command)
         assert kwargs["cwd"] == nested
+        if command == ["git", "diff", "--no-color"]:
+            return subprocess.CompletedProcess(
+                args=command, returncode=0, stdout=MODIFIED_DIFF, stderr=""
+            )
+        assert command == ["git", "rev-parse", "--show-toplevel"]
         return subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout=f"{repository}\n", stderr=""
+            args=command, returncode=0, stdout=f"{repository}\n", stderr=""
         )
 
     def record_run(app: DunkrApp) -> None:
@@ -150,13 +186,17 @@ def test_main_maps_paths_from_git_root_when_invoked_in_nested_directory(
         launched.append(app)
 
     monkeypatch.chdir(nested)
-    monkeypatch.setattr(sys, "stdin", FakeStdin(MODIFIED_DIFF))
+    monkeypatch.setattr(sys, "stdin", FakeStdin(is_terminal=True))
     monkeypatch.setattr(subprocess, "run", completed_run)
     monkeypatch.setattr(cli, "terminal_input", lambda stdin: nullcontext())
     monkeypatch.setattr(DunkrApp, "run", record_run)
 
     assert main() == 0
     assert launched[0].diff_set.files[0].target_path == repository / "example.py"
+    assert commands == [
+        ["git", "diff", "--no-color"],
+        ["git", "rev-parse", "--show-toplevel"],
+    ]
 
 
 def test_terminal_input_reports_controlling_terminal_failure(
