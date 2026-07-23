@@ -4,7 +4,7 @@ from pathlib import Path
 
 from rich.text import Text
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import Footer, Header, ListItem, ListView, Static
 
 from dunkr.models import DiffFile, DiffSet, parse_diff
@@ -37,12 +37,22 @@ class FileSidebar(ListView):
         )
 
 
-class DiffView(Static):
-    """Display one selected file as a native Rich renderable."""
+class DiffView(Vertical):
+    """Display every changed file as one ordered vertical document."""
 
-    def show_file(self, file: DiffFile) -> None:
-        """Replace the pane content with ``file``."""
-        self.update(FileDiffRenderable(file=file))
+    def __init__(self, files: tuple[DiffFile, ...]) -> None:
+        """Store every parsed file for composition as stable document sections."""
+        self.files = files
+        super().__init__(id="diff")
+
+    def compose(self) -> ComposeResult:
+        """Yield each file's native Rich diff in input order."""
+        for index, file in enumerate(self.files):
+            yield Static(
+                FileDiffRenderable(file=file),
+                id=f"section-{index}",
+                classes="file-section",
+            )
 
 
 class DunkrApp(App[None]):
@@ -56,7 +66,8 @@ class DunkrApp(App[None]):
     #body { height: 1fr; }
     #files { width: 32; min-width: 20; border-right: solid #3e4036; }
     #diff-scroll { width: 1fr; }
-    #diff { width: 1fr; }
+    #diff { width: 1fr; height: auto; }
+    .file-section { width: 1fr; height: auto; }
     #empty { width: 1fr; height: 1fr; content-align: center middle; }
     .sidebar-hidden #files { display: none; }
     """
@@ -66,6 +77,8 @@ class DunkrApp(App[None]):
         """Parse ``diff`` once and initialize selected-file state."""
         super().__init__()
         self.diff_set: DiffSet = parse_diff(text=diff, project_root=project_root)
+        self.section_offsets: dict[str, int] = {}
+        """Current vertical offsets for document file sections, by display path."""
 
     def compose(self) -> ComposeResult:
         """Compose app chrome, file selection, and scrollable diff content."""
@@ -76,26 +89,29 @@ class DunkrApp(App[None]):
             with Horizontal(id="body"):
                 yield FileSidebar(files=self.diff_set.files)
                 with VerticalScroll(id="diff-scroll"):
-                    yield DiffView(id="diff")
+                    yield DiffView(files=self.diff_set.files)
         yield Footer()
 
     def on_mount(self) -> None:
-        """Select and display the first changed file."""
+        """Select the first changed file without replacing the document."""
         self.title = "dunkr"
         if self.diff_set.files:
             sidebar = self.query_one(FileSidebar)
             sidebar.index = 0
-            self.query_one(DiffView).show_file(self.diff_set.files[0])
+            self.call_after_refresh(self._scroll_to_file, 0)
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
-        """Display the file corresponding to the highlighted sidebar row."""
+        """Scroll the stable document to the highlighted file section."""
         if event.list_view.id == "files" and event.list_view.index is not None:
-            self.query_one(DiffView).show_file(
-                self.diff_set.files[event.list_view.index]
-            )
-            self.query_one("#diff-scroll", VerticalScroll).scroll_home(
-                animate=False, immediate=True
-            )
+            self.call_after_refresh(self._scroll_to_file, event.list_view.index)
+
+    def _scroll_to_file(self, index: int) -> None:
+        """Move the document viewport to a section after the layout is current."""
+        file = self.diff_set.files[index]
+        section = self.query_one(f"#section-{index}")
+        scroll = self.query_one("#diff-scroll", VerticalScroll)
+        scroll.scroll_to_widget(section, top=True, animate=False, immediate=True)
+        self.section_offsets[file.path] = int(scroll.scroll_offset.y)
 
     def action_toggle_sidebar(self) -> None:
         """Toggle the file sidebar without changing selection."""

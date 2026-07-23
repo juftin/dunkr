@@ -7,7 +7,7 @@ from textual.containers import VerticalScroll
 from textual.geometry import Region
 from textual.widget import Widget
 
-from dunkr.app import DiffView, DunkrApp, FileSidebar
+from dunkr.app import DunkrApp, FileSidebar
 
 
 TWO_FILE_DIFF = """\
@@ -45,21 +45,23 @@ def _widget_text(widget: Widget) -> str:
 
 
 def test_sidebar_selects_the_displayed_file(tmp_path: Path) -> None:
-    """Update the diff pane when the user selects another file."""
+    """Keep every file rendered while the sidebar navigates to a section."""
     _write_changed_files(project_root=tmp_path)
 
-    async def run_app() -> str:
-        """Select the second file and return the visible text."""
+    async def run_app() -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Select the second file and return its stable document sections."""
         app = DunkrApp(diff=TWO_FILE_DIFF, project_root=tmp_path)
-        async with app.run_test(size=(120, 40)) as pilot:
+        async with app.run_test(size=(120, 10)) as pilot:
             await pilot.pause()
+            before = tuple(section.id for section in app.query(".file-section"))
             app.query_one(FileSidebar).index = 1
             await pilot.pause()
-            return _widget_text(widget=app.query_one(DiffView))
+            after = tuple(section.id for section in app.query(".file-section"))
+            return before, after
 
-    rendered = asyncio.run(run_app())
-    assert "two.py" in rendered
-    assert "two = 2" in rendered
+    before, after = asyncio.run(run_app())
+    assert before == ("section-0", "section-1")
+    assert after == before
 
 
 def test_empty_diff_shows_no_changes(tmp_path: Path) -> None:
@@ -106,8 +108,8 @@ def test_sidebar_binding_is_safe_for_empty_diff(tmp_path: Path) -> None:
     assert "No changes" in asyncio.run(run_app())
 
 
-def test_file_selection_scrolls_new_diff_to_home(tmp_path: Path) -> None:
-    """Start each newly selected file at the top of its diff."""
+def test_file_selection_scrolls_to_its_document_section(tmp_path: Path) -> None:
+    """Move the long document to the highlighted file section."""
     line_count = 80
 
     def file_patch(name: str) -> str:
@@ -136,33 +138,28 @@ def test_file_selection_scrolls_new_diff_to_home(tmp_path: Path) -> None:
         async with app.run_test(size=(120, 20)) as pilot:
             await pilot.pause()
             scroll = app.query_one("#diff-scroll", VerticalScroll)
-            scroll.scroll_end(animate=False)
-            await pilot.pause()
-            before = scroll.scroll_offset.y
             app.query_one(FileSidebar).index = 1
             await pilot.pause()
-            return before, scroll.scroll_offset.y
+            return scroll.scroll_offset.y, app.section_offsets["two.py"]
 
-    before, after = asyncio.run(run_app())
-    assert before > 0
-    assert after == 0
+    actual, expected = asyncio.run(run_app())
+    assert actual == expected
 
 
-def test_selected_diff_survives_resize(tmp_path: Path) -> None:
-    """Keep the selected file visible after terminal reflow."""
+def test_all_files_document_survives_resize(tmp_path: Path) -> None:
+    """Keep all file sections present after terminal reflow."""
     _write_changed_files(project_root=tmp_path)
 
-    async def run_app() -> str:
-        """Resize the terminal and return visible screen text."""
+    async def run_app() -> tuple[str, ...]:
+        """Resize the terminal and return stable file section identifiers."""
         app = DunkrApp(diff=TWO_FILE_DIFF, project_root=tmp_path)
         async with app.run_test(size=(120, 40)) as pilot:
-            app.query_one(FileSidebar).index = 1
             await pilot.pause()
             await pilot.resize_terminal(width=70, height=30)
             await pilot.pause()
-            return _widget_text(widget=app.query_one(DiffView))
+            return tuple(section.id for section in app.query(".file-section"))
 
-    assert "two.py" in asyncio.run(run_app())
+    assert asyncio.run(run_app()) == ("section-0", "section-1")
 
 
 def test_q_binding_exits(tmp_path: Path) -> None:
