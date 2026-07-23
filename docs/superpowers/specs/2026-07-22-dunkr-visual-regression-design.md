@@ -105,8 +105,8 @@ An optional preview command or test helper renders current SVGs to PNG files
 under `artifacts/screenshots/`. That directory is ignored by Git. The
 `--preview` command creates those PNGs from the current SVG captures. PNGs are
 for human and agent inspection only; SVGs are the test oracle.
-`cairosvg` is a development-only dependency used solely for that SVG-to-PNG
-preview conversion.
+On macOS, the preview command uses the built-in `sips` converter; the visual
+test oracle itself has no additional dependency.
 
 ## Testing
 

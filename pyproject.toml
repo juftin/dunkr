@@ -28,6 +28,8 @@ dependencies = [
 
 [project.scripts]
 dunkr = "dunkr.cli:main"
+dunkr-demo = "dunkr.demo:main"
+dunkr-snapshots = "dunkr.snapshots:main"
 
 [project.urls]
 homepage = "https://github.com/darrenburns/dunkr"

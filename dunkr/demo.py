@@ -53,12 +53,21 @@ def create_demo_repository() -> Iterator[DemoRepository]:
         _write(
             root,
             "src/calculator.py",
-            "def add(left: int, right: int) -> int:\n    return left + right\n",
+            "def add(left: int, right: int) -> int:\n"
+            "    total = left + right\n"
+            "    return total\n\n"
+            "def multiply(left: int, right: int) -> int:\n"
+            "    return left * right\n",
         )
-        _write(root, "legacy/old_config.py", "DEBUG = False\n")
+        _write(root, "legacy/old_config.py", "DEBUG = False\nPORT = 8000\n")
         _write(root, "assets/old_name.txt", "A stable asset name.\n")
         _write(
-            root, "src/old_module.py", "def greeting() -> str:\n    return 'hello'\n"
+            root,
+            "src/old_module.py",
+            "def greeting() -> str:\n"
+            "    return 'hello'\n\n"
+            "def farewell() -> str:\n"
+            "    return 'goodbye'\n",
         )
         _write(root, "assets/logo.bin", b"\x00\x01original\xff")
         _write(root, "notes/no_newline.txt", "before")
@@ -68,9 +77,21 @@ def create_demo_repository() -> Iterator[DemoRepository]:
         _write(
             root,
             "src/calculator.py",
-            "def add(left: int, right: int) -> int:\n    return left + right + 1\n",
+            "def add(left: int, right: int) -> int:\n"
+            "    total = left + right\n"
+            "    return total + 1\n\n"
+            "def multiply(left: int, right: int) -> int:\n"
+            "    return left * right\n",
         )
-        _write(root, "docs/guide.md", "# Guide\n\nUse the calculator carefully.\n")
+        _write(
+            root,
+            "docs/guide.md",
+            "# Guide\n\n"
+            "Use the calculator carefully.\n\n"
+            "## Examples\n\n"
+            "- Add two values.\n"
+            "- Multiply two values.\n",
+        )
         _git(root, "add", "docs/guide.md")
         (root / "legacy/old_config.py").unlink()
         _git(root, "mv", "assets/old_name.txt", "assets/new_name.txt")
@@ -78,7 +99,10 @@ def create_demo_repository() -> Iterator[DemoRepository]:
         _write(
             root,
             "src/new_module.py",
-            "def greeting() -> str:\n    return 'hello, dunkr'\n",
+            "def greeting() -> str:\n"
+            "    return 'hello, dunkr'\n\n"
+            "def farewell() -> str:\n"
+            "    return 'see you soon'\n",
         )
         _write(root, "assets/logo.bin", b"\x00\x01changed\xfe")
         _write(root, "notes/no_newline.txt", "after")

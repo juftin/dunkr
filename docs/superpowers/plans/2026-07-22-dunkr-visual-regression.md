@@ -171,7 +171,7 @@ parser.add_argument("--preview", action="store_true")
 parser.add_argument("--output", type=Path, default=Path("tests/snapshots"))
 ```
 
-Without `--update`, return status 1 when a baseline is missing or differs. With `--update`, write normalized SVGs. With `--preview`, use `cairosvg.svg2png(bytestring=svg.encode(), write_to=preview_path)` to render each capture to `artifacts/screenshots/<name>.png`; never add those files to Git. Add `cairosvg` as a preview-only development dependency with `uv add --dev cairosvg`.
+Without `--update`, return status 1 when a baseline is missing or differs. With `--update`, write normalized SVGs. With `--preview`, write each SVG to a temporary file and use the built-in macOS `sips -s format png <svg> --out <preview>` converter to render it to `artifacts/screenshots/<name>.png`; never add those files to Git. The visual test oracle has no additional dependency.
 
 Add scripts to `pyproject.toml`:
 

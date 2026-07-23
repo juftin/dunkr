@@ -8,6 +8,7 @@ from textual.geometry import Region
 from textual.widget import Widget
 
 from dunkr.app import DunkrApp, FileSidebar
+from dunkr.demo import create_demo_repository
 
 
 TWO_FILE_DIFF = """\
@@ -143,6 +144,25 @@ def test_file_selection_scrolls_to_its_document_section(tmp_path: Path) -> None:
             return scroll.scroll_offset.y, app.section_offsets["two.py"]
 
     actual, expected = asyncio.run(run_app())
+    assert actual == expected
+
+
+def test_demo_sidebar_selection_scrolls_to_the_binary_section() -> None:
+    """Prove the mixed-diff fixture is long enough to exercise navigation."""
+
+    async def run_app() -> tuple[int, int]:
+        """Select the binary row and return the resulting scroll anchor."""
+        with create_demo_repository() as demo:
+            app = DunkrApp(diff=demo.diff, project_root=demo.root)
+            async with app.run_test(size=(140, 42)) as pilot:
+                await pilot.pause()
+                app.query_one(FileSidebar).index = 5
+                await pilot.pause()
+                scroll = app.query_one("#diff-scroll", VerticalScroll)
+                return scroll.scroll_offset.y, app.section_offsets["assets/logo.bin"]
+
+    actual, expected = asyncio.run(run_app())
+    assert actual > 0
     assert actual == expected
 
 
