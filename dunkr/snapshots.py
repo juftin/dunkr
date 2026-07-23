@@ -18,7 +18,7 @@ SnapshotState = tuple[str, int | None, bool]
 SNAPSHOT_STATES: tuple[SnapshotState, ...] = (
     ("all-files-overview", None, False),
     ("rename-section", 3, False),
-    ("binary-section", 5, False),
+    ("binary-section", 6, False),
     ("sidebar-hidden", None, True),
 )
 """The committed visual states for the mixed-diff demo."""
@@ -28,8 +28,11 @@ _TIMESTAMP_PATTERN = re.compile(r'\s(?:timestamp|data-timestamp)="[^"]*"')
 
 
 def normalize_svg(svg: str) -> str:
-    """Remove volatile title and timestamp metadata from a Textual SVG capture."""
-    return _TIMESTAMP_PATTERN.sub("", _TITLE_PATTERN.sub("<title>dunkr</title>", svg))
+    """Remove volatile metadata and normalize rect line height to prevent subpixel gaps."""
+    cleaned = _TIMESTAMP_PATTERN.sub(
+        "", _TITLE_PATTERN.sub("<title>dunkr</title>", svg)
+    )
+    return cleaned.replace('height="24.65"', 'height="24.9"')
 
 
 async def capture_demo_state(
@@ -71,8 +74,30 @@ def _write_preview(*, name: str, svg: str) -> None:
     preview_path = Path("artifacts/screenshots") / f"{name}.png"
     preview_path.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(prefix="dunkr-snapshot-") as temporary_directory:
-        source = Path(temporary_directory) / f"{name}.svg"
+        source_dir = Path(temporary_directory)
+        source = source_dir / f"{name}.svg"
         source.write_text(svg)
+        try:
+            subprocess.run(
+                [
+                    "qlmanage",
+                    "-t",
+                    "-s",
+                    "1726",
+                    "-o",
+                    str(source_dir),
+                    str(source),
+                ],
+                check=True,
+                capture_output=True,
+            )
+            rendered = source_dir / f"{name}.svg.png"
+            if rendered.is_file():
+                rendered.replace(preview_path)
+                return
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            pass
+
         try:
             subprocess.run(
                 [
@@ -90,7 +115,7 @@ def _write_preview(*, name: str, svg: str) -> None:
             )
         except FileNotFoundError as error:
             raise RuntimeError(
-                "PNG previews require the macOS sips command."
+                "PNG previews require qlmanage or sips command."
             ) from error
 
 

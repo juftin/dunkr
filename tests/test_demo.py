@@ -15,6 +15,7 @@ def test_demo_repository_contains_every_change_kind() -> None:
         ChangeKind.DELETED,
         ChangeKind.RENAMED,
         ChangeKind.RENAMED,
+        ChangeKind.MODIFIED,
         ChangeKind.BINARY,
         ChangeKind.MODIFIED,
     ]
@@ -24,6 +25,7 @@ def test_demo_repository_contains_every_change_kind() -> None:
         "legacy/old_config.py",
         "assets/new_name.txt",
         "src/new_module.py",
+        "src/deeply/nested/subfolder/very_long_file_name_with_detailed_logic.py",
         "assets/logo.bin",
         "notes/no_newline.txt",
     ]

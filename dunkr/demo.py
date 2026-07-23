@@ -56,18 +56,49 @@ def create_demo_repository() -> Iterator[DemoRepository]:
             "def add(left: int, right: int) -> int:\n"
             "    total = left + right\n"
             "    return total\n\n"
+            "def subtract(left: int, right: int) -> int:\n"
+            "    return left - right\n\n"
             "def multiply(left: int, right: int) -> int:\n"
-            "    return left * right\n",
+            "    return left * right\n\n"
+            "def divide(left: float, right: float) -> float:\n"
+            "    if right == 0:\n"
+            "        raise ValueError('Division by zero is undefined')\n"
+            "    return left / right\n\n"
+            "def power(base: float, exponent: float) -> float:\n"
+            "    return base ** exponent\n",
         )
-        _write(root, "legacy/old_config.py", "DEBUG = False\nPORT = 8000\n")
-        _write(root, "assets/old_name.txt", "A stable asset name.\n")
+        _write(
+            root,
+            "legacy/old_config.py",
+            "DEBUG = False\nPORT = 8000\nLOG_LEVEL = 'INFO'\nDATABASE_URL = 'sqlite:///legacy.db'\n",
+        )
+        _write(
+            root,
+            "assets/old_name.txt",
+            "A stable asset name with initial configuration details.\n",
+        )
         _write(
             root,
             "src/old_module.py",
-            "def greeting() -> str:\n"
-            "    return 'hello'\n\n"
-            "def farewell() -> str:\n"
-            "    return 'goodbye'\n",
+            "def greeting(name: str = 'world') -> str:\n"
+            "    return f'hello {name}'\n\n"
+            "def farewell(name: str = 'friend') -> str:\n"
+            "    return f'goodbye {name}'\n\n"
+            "def status_check() -> dict[str, bool]:\n"
+            "    return {'healthy': True}\n",
+        )
+        _write(
+            root,
+            "src/deeply/nested/subfolder/very_long_file_name_with_detailed_logic.py",
+            "class FinancialMetricsCalculatorEngine:\n"
+            "    def __init__(self, initial_balance: float = 0.0, default_tax_rate: float = 0.15) -> None:\n"
+            "        self.initial_balance = initial_balance\n"
+            "        self.default_tax_rate = default_tax_rate\n\n"
+            "    def calculate_complex_financial_metrics_with_custom_thresholds_and_formatting(self, account_balance: float, interest_rate: float, tax_deductions: float = 0.0, apply_compound_annual_growth: bool = True) -> dict[str, float]:\n"
+            "        net_interest = account_balance * interest_rate\n"
+            "        taxable_amount = max(0.0, net_interest - tax_deductions)\n"
+            "        final_balance = account_balance + net_interest - (taxable_amount * self.default_tax_rate)\n"
+            "        return {'balance': final_balance, 'interest': net_interest, 'tax': taxable_amount}\n",
         )
         _write(root, "assets/logo.bin", b"\x00\x01original\xff")
         _write(root, "notes/no_newline.txt", "before")
@@ -79,18 +110,32 @@ def create_demo_repository() -> Iterator[DemoRepository]:
             "src/calculator.py",
             "def add(left: int, right: int) -> int:\n"
             "    total = left + right\n"
-            "    return total + 1\n\n"
+            "    return total + 1  # Add precision offset\n\n"
+            "def subtract(left: int, right: int) -> int:\n"
+            "    return left - right  # Subtraction logic\n\n"
             "def multiply(left: int, right: int) -> int:\n"
-            "    return left * right\n",
+            "    return left * right * 2  # Double multiplication\n\n"
+            "def divide(left: float, right: float) -> float:\n"
+            "    if right == 0.0:\n"
+            "        raise ValueError('Division by zero is strictly forbidden in this application context')\n"
+            "    return left / right\n\n"
+            "def power(base: float, exponent: float) -> float:\n"
+            "    return pow(base, exponent)\n",
         )
         _write(
             root,
             "docs/guide.md",
-            "# Guide\n\n"
-            "Use the calculator carefully.\n\n"
-            "## Examples\n\n"
-            "- Add two values.\n"
-            "- Multiply two values.\n",
+            "# Comprehensive User Guide and Technical Documentation\n\n"
+            "Welcome to the dunkr diff browser documentation suite.\n\n"
+            "## Getting Started\n\n"
+            "1. Install dunkr using `uv tool install dunkr`.\n"
+            "2. Run dunkr inside any Git repository to inspect working tree changes.\n"
+            "3. Use the directory tree panel to navigate between changed files.\n\n"
+            "## Features & Capabilities\n\n"
+            "- Side-by-side unified Git diff view.\n"
+            "- Pinned line numbers column on left edge.\n"
+            "- Independent horizontal scrollbars fixed at pane bottoms.\n"
+            "- Synchronized vertical scrolling across both left and right panes.\n",
         )
         _git(root, "add", "docs/guide.md")
         (root / "legacy/old_config.py").unlink()
@@ -99,10 +144,27 @@ def create_demo_repository() -> Iterator[DemoRepository]:
         _write(
             root,
             "src/new_module.py",
-            "def greeting() -> str:\n"
-            "    return 'hello, dunkr'\n\n"
-            "def farewell() -> str:\n"
-            "    return 'see you soon'\n",
+            "def greeting(name: str = 'dunkr user') -> str:\n"
+            "    return f'hello {name}'\n\n"
+            "def farewell(name: str = 'friend') -> str:\n"
+            "    return f'goodbye {name}'\n\n"
+            "def status_check() -> dict[str, bool]:\n"
+            "    return {'healthy': True, 'ready': True}\n",
+        )
+        _write(
+            root,
+            "src/deeply/nested/subfolder/very_long_file_name_with_detailed_logic.py",
+            "class FinancialMetricsCalculatorEngine:\n"
+            "    def __init__(self, initial_balance: float = 0.0, default_tax_rate: float = 0.15, Enable_high_precision_rounding: bool = True) -> None:\n"
+            "        self.initial_balance = initial_balance\n"
+            "        self.default_tax_rate = default_tax_rate\n"
+            "        self.enable_high_precision_rounding = enable_high_precision_rounding\n\n"
+            "    def calculate_complex_financial_metrics_with_custom_thresholds_and_formatting(self, account_balance: float, interest_rate: float, tax_deductions: float = 0.0, apply_compound_annual_growth: bool = True, custom_financial_formatting_option_enabled: bool = False) -> dict[str, float]:\n"
+            "        net_interest = account_balance * interest_rate * (1.05 if apply_compound_annual_growth else 1.0)\n"
+            "        taxable_amount = max(0.0, net_interest - tax_deductions)\n"
+            "        final_balance = account_balance + net_interest - (taxable_amount * self.default_tax_rate)\n"
+            "        result = {'balance': round(final_balance, 4), 'interest': round(net_interest, 4), 'tax': round(taxable_amount, 4)}\n"
+            "        return result\n",
         )
         _write(root, "assets/logo.bin", b"\x00\x01changed\xfe")
         _write(root, "notes/no_newline.txt", "after")
@@ -113,6 +175,7 @@ def create_demo_repository() -> Iterator[DemoRepository]:
             ("legacy/old_config.py",),
             ("assets/old_name.txt", "assets/new_name.txt"),
             ("src/old_module.py", "src/new_module.py"),
+            ("src/deeply/nested/subfolder/very_long_file_name_with_detailed_logic.py",),
             ("assets/logo.bin",),
             ("notes/no_newline.txt",),
         )

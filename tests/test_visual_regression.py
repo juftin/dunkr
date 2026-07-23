@@ -14,7 +14,7 @@ from tests.visual import assert_snapshot, capture_demo_state
     [
         ("all-files-overview", None, False),
         ("rename-section", 3, False),
-        ("binary-section", 5, False),
+        ("binary-section", 6, False),
         ("sidebar-hidden", None, True),
     ],
 )
