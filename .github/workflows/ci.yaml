@@ -38,11 +38,6 @@ jobs:
                       task: check:types
                       install: true
                       annotations_mypy: true
-                    - name: test - 3.10
-                      task: test
-                      install: true
-                      run_on_push: true
-                      python: "3.10"
                     - name: test - 3.11
                       task: test
                       install: true

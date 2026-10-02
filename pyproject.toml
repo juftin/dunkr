@@ -10,7 +10,7 @@ dependencies = [
   "textual>=0.80"
 ]
 authors = [
-  {name = "Justin Flannery", email = "juftin@juftin.com"}
+  { name = "Justin Flannery", email = "juftin@juftin.com" }
 ]
 license = "MIT"
 classifiers = [
