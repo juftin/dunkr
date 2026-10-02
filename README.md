@@ -1,5 +1,7 @@
 # dunkr
 
+> the spiritual successor to [dunk](https://github.com/darrenburns/dunk)
+
 A rich, interactive side-by-side Git diff viewer built with Textual.
 
 ## Installation

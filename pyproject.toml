@@ -1,9 +1,9 @@
 [project]
 name = "dunkr"
 version = "0.5.0b0"
-description = "Beautiful side-by-side diffs in your terminal"
+description = "the spiritual successor to dunk"
 authors = [
-    {name = "Darren Burns", email = "darrenb900@gmail.com"}
+    {name = "Justin Flannery", email = "justin.flannery@juftin.com"}
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -32,10 +32,10 @@ dunkr-demo = "dunkr.demo:main"
 dunkr-snapshots = "dunkr.snapshots:main"
 
 [project.urls]
-homepage = "https://github.com/darrenburns/dunkr"
-repository = "https://github.com/darrenburns/dunkr"
-issues = "https://github.com/darrenburns/dunkr/issues"
-documentation = "https://github.com/darrenburns/dunkr/blob/main/README.md"
+homepage = "https://github.com/juftin/dunkr"
+repository = "https://github.com/juftin/dunkr"
+issues = "https://github.com/juftin/dunkr/issues"
+documentation = "https://github.com/juftin/dunkr/blob/main/README.md"
 
 [dependency-groups]
 dev = [
@@ -46,7 +46,10 @@ dev = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["dunkr"]
+packages = ["src/dunkr"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [build-system]
 requires = ["hatchling"]
