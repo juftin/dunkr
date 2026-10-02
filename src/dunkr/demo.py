@@ -1,11 +1,11 @@
 """Deterministic mixed Git diffs for demos and visual regression tests."""
 
+import subprocess
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-import subprocess
 from tempfile import TemporaryDirectory
-from typing import Iterator
 
 from dunkr.app import DunkrApp
 

@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from functools import lru_cache
 from itertools import zip_longest
-from typing import Iterable
 
 from pygments.util import ClassNotFound
 from rich.console import Console, ConsoleOptions, RenderResult
@@ -219,8 +218,8 @@ def _side_content_widths(file: DiffFile) -> tuple[int, int]:
     # Cap at a terminal-reasonable maximum — a single minified/SVG line can be
     # tens of thousands of characters, which makes every empty opposite-pane cell
     # an enormous string allocation.
-    _MAX_COL = 2000
-    return min(left_max + 6, _MAX_COL), min(right_max + 6, _MAX_COL)
+    max_col = 2000
+    return min(left_max + 6, max_col), min(right_max + 6, max_col)
 
 
 def _render_left_hunk(hunk: Hunk, lexer: str, col_width: int) -> tuple[Text, Table]:
@@ -448,7 +447,7 @@ def build_full_document_panes(
     section_offsets: dict[str, int] = {}
     current_line = 0
 
-    for index, file in enumerate(files):
+    for file in files:
         section_offsets[file.path] = current_line
         additions_str = (
             "1 addition" if file.additions == 1 else f"{file.additions} additions"
@@ -616,7 +615,7 @@ def build_full_document_panes(
     )
 
 
-def _render_hunks(file: DiffFile, width: int) -> Iterable[object]:
+def _render_hunks(file: DiffFile, width: int) -> RenderResult:
     """Yield width-aware side-by-side tables for every hunk without wrapping."""
     try:
         lexer = Syntax.guess_lexer(file.target_display_path or file.path)

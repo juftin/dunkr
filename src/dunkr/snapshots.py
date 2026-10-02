@@ -2,15 +2,14 @@
 
 import argparse
 import asyncio
-from collections.abc import Sequence
-from pathlib import Path
 import re
 import subprocess
+from collections.abc import Sequence
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from dunkr.app import DunkrApp, FileSidebar
 from dunkr.demo import create_demo_repository
-
 
 SnapshotState = tuple[str, int | None, bool]
 """A named screenshot state with optional sidebar navigation or hiding."""

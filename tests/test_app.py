@@ -10,7 +10,6 @@ from textual.widget import Widget
 from dunkr.app import DiffView, DunkrApp, FileSidebar
 from dunkr.demo import create_demo_repository
 
-
 TWO_FILE_DIFF = """\
 diff --git a/one.py b/one.py
 --- a/one.py

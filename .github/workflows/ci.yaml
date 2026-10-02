@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: ci
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+permissions:
+    contents: read
+    id-token: write
+    pull-requests: write
+
+jobs:
+    ci:
+        name: ${{ matrix.name }}
+        runs-on: ubuntu-24.04
+        concurrency:
+            group: ${{ github.workflow }}-${{ matrix.name }}-${{ github.event.pull_request.number }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - name: build
+                      task: build
+                    - name: check - format
+                      task: check:format
+                      install: true
+                      annotations_ruff: true
+                    - name: check - lint
+                      task: check:lint
+                      install: true
+                      annotations_ruff: true
+                    - name: check - types
+                      task: check:types
+                      install: true
+                      annotations_mypy: true
+                    - name: test - 3.10
+                      task: test
+                      install: true
+                      run_on_push: true
+                      python: "3.10"
+                    - name: test - 3.11
+                      task: test
+                      install: true
+                      run_on_push: true
+                      python: "3.11"
+                    - name: test - 3.12
+                      task: test
+                      install: true
+                      run_on_push: true
+                      python: "3.12"
+                    - name: test - 3.13
+                      task: test
+                      install: true
+                      run_on_push: true
+                      python: "3.13"
+                    - name: test - 3.14
+                      task: test
+                      install: true
+                      run_on_push: true
+                      python: "3.14"
+                    - name: pre-commit
+                      task: install
+                      install: true
+        steps:
+            - name: ${{ matrix.name }}
+              if: github.event_name == 'pull_request' || matrix.run_on_push
+              uses: juftin/actions/taskfile@v1
+              with:
+                  task: ${{ matrix.task }}
+                  checkout: true
+                  install: ${{ matrix.install || false }}
+                  fetch-depth: ${{ matrix.name == 'pre-commit' && '0' || '1' }}
+                  setup-uv: true
+                  buildx: ${{ matrix.name == 'build' }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  annotations-ruff: ${{ matrix.annotations_ruff || false }}
+                  annotations-mypy: ${{ matrix.annotations_mypy || false }}
+                  annotations-pytest: ${{ matrix.python == '3.14' }}
+                  pytest-coverage: ${{ matrix.python == '3.14' && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
+              env:
+                  UV_PYTHON: ${{ matrix.python || '' }}
+            - name: pre-commit
+              if: matrix.name == 'pre-commit' && github.event_name == 'pull_request'
+              run: |
+                  uv tool run --isolated \
+                    --with pre-commit-uv \
+                    pre-commit run \
+                      --color always \
+                      --from-ref ${{ github.event.pull_request.base.sha }} \
+                      --to-ref ${{ github.event.pull_request.head.sha }}

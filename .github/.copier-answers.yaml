@@ -1,0 +1,19 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v1.2.1
+_src_path: gh:juftin/cookiecutter-python
+build_docker_image: false
+default_branch: main
+default_python_version: '3.14'
+development_status: 'Development Status :: 4 - Beta'
+favicon: https://juftin.com/favicon.ico
+github_user: juftin
+license: MIT
+logo_url: https://raw.githubusercontent.com/juftin/juftin/main/static/juftin.png
+package_name: dunkr
+project_description: the spiritual successor to dunk
+project_name: dunkr
+publish_to_docker_hub: false
+publish_to_pypi: true
+user_email: juftin@juftin.com
+user_name: Justin Flannery
+version: 0.5.0b0

@@ -1,0 +1,207 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+env:
+    UV_LOCKED: 1
+vars:
+    DOCKER_REPO: juftin/dunkr
+
+tasks:
+    ########################
+    # DEFAULT TASK
+    ########################
+    default:
+        desc: List Available Tasks
+        cmds:
+            - task --list-all --sort alphanumeric
+        silent: true
+    ########################
+    # INSTALL AND DEPENDENCIES
+    ########################
+    install:
+        desc: Install Project + Dev Dependencies
+        cmds:
+            - task: pre-commit-install
+            - task: sync
+    ########################
+    # TESTING
+    ########################
+    test:
+        desc: Run Tests
+        cmds:
+            - uv run -- pytest {{.CLI_ARGS}}
+        deps:
+            - task: sync
+              vars:
+                  UV_PYTHON: "{{.UV_PYTHON}}"
+                  CLI_ARGS: --quiet
+        env:
+            UV_PYTHON: "{{.UV_PYTHON}}"
+    #######################################
+    test:matrix:
+        desc: Run Tests across Python Versions
+        cmds:
+            - for:
+                  matrix:
+                      PYTHON: ["3.11", "3.12", "3.13", "3.14"]
+              task: test
+              vars:
+                  UV_PYTHON: "{{.ITEM.PYTHON}}"
+    ########################
+    # CODE QUALITY CHECKS
+    ########################
+    check:format:
+        desc: Code Quality Check - Formatting
+        cmds:
+            - task: fmt
+              vars:
+                  CLI_ARGS: --check
+    #######################################
+    check:lint:
+        desc: Code Quality Check - Linting
+        cmds:
+            - uv run -- ruff check {{.CLI_ARGS | default .ROOT_DIR}}
+        deps: [sync]
+    #######################################
+    check:style:
+        desc: Code Quality Check - Formatting + Linting
+        cmds:
+            - task: check:format
+            - task: check:lint
+    #######################################
+    check:types:
+        desc: Code Quality Check - Type Checking
+        cmds:
+            - |
+                uv run -- \
+                mypy \
+                  --ignore-missing-imports \
+                  {{.CLI_ARGS | default (printf "%s/src" .ROOT_DIR)}}
+        status:
+            - '[$(uv tree --package mypy) != ""]'
+    #######################################
+    check:
+        desc: Code Quality Check - Formatting + Linting + Type Checking
+        cmds:
+            - task: check:style
+            - task: check:types
+    ########################
+    # CODE QUALITY FIXES
+    ########################
+    fmt:
+        desc: Code Quality Auto-Fix - Formatting
+        cmds:
+            - uv run -- ruff format {{.CLI_ARGS | default .ROOT_DIR}}
+        deps: [sync]
+    #######################################
+    fix:
+        desc: Code Quality Auto-Fix - Formatting + Linting
+        cmds:
+            - task: fmt
+            - uv run -- ruff check --fix {{.CLI_ARGS | default .ROOT_DIR}}
+        deps: [sync]
+    ########################
+    # BUILD AND PUBLISH
+    ########################
+    dist:
+        desc: Build Distribution Artifacts
+        cmds:
+            - cmd: rm -rf {{.ROOT_DIR}}/dist
+            - cmd: uv build
+    #######################################
+    docker:
+        desc: Build Docker Image
+        cmd: |
+            docker buildx build \
+              --tag {{.DOCKER_REPO}}:{{.RELEASE_VERSION}} \
+              --tag {{.DOCKER_REPO}}:latest \
+              --file {{.ROOT_DIR}}/Dockerfile \
+              {{.CLI_ARGS | default ""}} \
+              {{.ROOT_DIR}}
+        vars:
+            RELEASE_VERSION:
+                ref: .RELEASE_VERSION | default "local"
+        requires:
+            vars: [DOCKER_REPO]
+        status:
+            - test ! -f {{.ROOT_DIR}}/{{.DOCKERFILE | default "Dockerfile"}}
+    #######################################
+    build:
+        desc: Build Project Artifacts
+        cmds:
+            - task: dist
+            - task: docker
+    #######################################
+    publish:
+        desc: Publish Docker Image
+        cmds:
+            - task: docker
+              vars:
+                  CLI_ARGS: --push
+        requires:
+            vars: [CI, RELEASE_VERSION]
+        status:
+            - test ! -f {{.ROOT_DIR}}/{{.DOCKERFILE | default "Dockerfile"}}
+    ########################
+    # DOCUMENTATION AND COMMANDS
+    ########################
+    docs:
+        desc: Run Documentation Site
+        cmds:
+            - uv run --group docs -- mkdocs {{.CLI_ARGS | default "serve"}}
+    #######################################
+    run:
+        desc: Run Project Command (requires "--")
+        interactive: true
+        cmds:
+            - uv run -- {{.CLI_ARGS}}
+    #######################################
+    docker-run:
+        desc: Run Docker Command (requires "--")
+        interactive: true
+        cmds:
+            - |
+                docker run \
+                  --rm -it \
+                  {{.DOCKER_REPO}}:{{.DOCKER_TAG_PREFIX}}{{.RELEASE_VERSION}} \
+                  {{.CLI_ARGS}}
+        deps: ["docker"]
+        vars:
+            RELEASE_VERSION:
+                ref: .RELEASE_VERSION | default "local"
+        status:
+            - test ! -f {{.ROOT_DIR}}/{{.DOCKERFILE | default "Dockerfile"}}
+        requires:
+            vars: [DOCKER_REPO]
+    ########################
+    # DEPENDENCY MANAGEMENT
+    ########################
+    lock:
+        desc: Regenerate Project Lockfile
+        cmds:
+            - uv lock
+        env:
+            UV_LOCKED: "0"
+    ########################
+    # INTERNAL TASKS
+    ########################
+    sync:
+        desc: Install Project Dependencies
+        internal: true
+        cmds:
+            - uv sync --all-extras {{.CLI_ARGS}}
+        env:
+            UV_PYTHON: "{{.UV_PYTHON}}"
+    #######################################
+    pre-commit-install:
+        desc: Install Pre-Commit Hooks
+        internal: true
+        cmds:
+            - cmd: |
+                  if [ "{{.CI | default 0}}" = "0" ]; then
+                      uv tool run --isolated pre-commit install --install-hooks
+                  fi
+              silent: true
+        status:
+            - test ! -f {{.ROOT_DIR}}/.pre-commit-config.yaml

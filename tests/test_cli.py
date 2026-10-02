@@ -3,13 +3,14 @@
 import io
 import subprocess
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
-from typing import Iterator, TextIO
+from typing import TextIO
 
 import pytest
 
-import dunkr.cli as cli
+from dunkr import cli
 from dunkr.app import DunkrApp
 from dunkr.cli import InputError, main, read_diff
 from tests.test_models import MODIFIED_DIFF

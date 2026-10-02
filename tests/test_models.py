@@ -6,7 +6,6 @@ import pytest
 
 from dunkr.models import ChangeKind, DiffParseError, parse_diff
 
-
 MODIFIED_DIFF = """\
 diff --git a/example.py b/example.py
 index 0000000..1111111 100644

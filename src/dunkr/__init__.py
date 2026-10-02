@@ -1,3 +1,10 @@
-"""dunkr: the spiritual successor to dunk."""
+"""
+dunkr: the spiritual successor to dunk.
+"""
 
-__version__ = "0.5.0b0"
+from dunkr.__about__ import __application__, __version__
+
+__all__ = [
+    "__application__",
+    "__version__",
+]
