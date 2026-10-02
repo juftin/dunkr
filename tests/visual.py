@@ -4,7 +4,6 @@ from pathlib import Path
 
 from dunkr.snapshots import capture_demo_state, normalize_svg
 
-
 __all__ = ["assert_snapshot", "capture_demo_state"]
 
 

@@ -3,9 +3,10 @@
 import os
 import subprocess
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, TextIO
+from typing import TextIO
 
 from dunkr.models import DiffParseError
 
@@ -65,6 +66,8 @@ def terminal_input(stdin: TextIO) -> Iterator[None]:
         return
     terminal_path = "CONIN$" if os.name == "nt" else "/dev/tty"
     try:
+        if sys.__stdin__ is None:
+            raise InputError("unable to access controlling terminal: unavailable")
         stdin_fd = sys.__stdin__.fileno()
         saved_fd = os.dup(stdin_fd)
     except OSError as error:

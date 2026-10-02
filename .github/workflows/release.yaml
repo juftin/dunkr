@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+
+name: release
+
+on:
+    push:
+        branches: [main, next, beta, alpha, "*.x"]
+
+jobs:
+    release:
+        name: release
+        if: github.repository_owner == 'juftin'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            issues: write
+            pull-requests: write
+        steps:
+            - name: checkout
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+              with:
+                  persist-credentials: false
+            - name: setup-uv
+              uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6.0.1
+            - name: Semantic Release
+              uses: juftin/actions/semantic-release@v1
+              with:
+                  github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+    docs:
+        name: docs
+        runs-on: ubuntu-latest
+        permissions:
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: build-docs
+              uses: juftin/actions/taskfile@v1
+              with:
+                  checkout: true
+                  setup-uv: true
+                  task: docs
+                  install: true
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  args: build
+            - name: Publish Docs
+              uses: juftin/actions/github-pages@v1
+              id: deployment

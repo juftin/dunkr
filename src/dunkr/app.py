@@ -1,6 +1,7 @@
 """Native Textual application for browsing rich file diffs."""
 
 from pathlib import Path
+from typing import Any
 
 from rich.rule import Rule
 from rich.table import Table
@@ -11,6 +12,7 @@ from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.geometry import Size
 from textual.widget import Widget
 from textual.widgets import Footer, Header, Static, Tree
+from textual.widgets.tree import TreeNode
 from textual.worker import Worker
 
 from dunkr.models import ChangeKind, DiffFile, DiffSet, parse_diff
@@ -25,7 +27,7 @@ class FileSidebar(Tree[int]):
     def __init__(self, files: tuple[DiffFile, ...]) -> None:
         """Configure directory tree for changed files and subtrees."""
         self.files = files
-        self.file_nodes: list[Tree.Node[int]] = []
+        self.file_nodes: list[TreeNode[int]] = []
         total_additions = sum(file.additions for file in files)
         total_deletions = sum(file.deletions for file in files)
         root_label = Text.assemble(
@@ -56,7 +58,7 @@ class FileSidebar(Tree[int]):
                 dir_stats[current_path]["additions"] += file.additions
                 dir_stats[current_path]["deletions"] += file.deletions
 
-        nodes: dict[str, Tree.Node[int]] = {"": self.root}
+        nodes: dict[str, TreeNode[int]] = {"": self.root}
         for index, file in enumerate(self.files):
             parts = file.path.split("/")
             current_path = ""
@@ -309,7 +311,7 @@ class FileSectionWidget(Vertical):
             self._render_hunks()
 
     @work(thread=True)
-    def _render_hunks(self) -> list:
+    def _render_hunks(self) -> list[Any]:
         """Compute hunk renderables in a background thread."""
         return render_file_hunks(self.file)
 
@@ -317,10 +319,10 @@ class FileSectionWidget(Vertical):
         """Mount HunkWidgets once the background render worker completes."""
         from textual.worker import WorkerState
 
-        if event.state is WorkerState.SUCCESS:
+        if event.state is WorkerState.SUCCESS and event.worker.result is not None:
             self.mount_hunks(event.worker.result)
 
-    def mount_hunks(self, hunks: list) -> None:
+    def mount_hunks(self, hunks: list[Any]) -> None:
         """Mount pre-rendered HunkWidgets into this section."""
         hunk_widgets = [
             HunkWidget(

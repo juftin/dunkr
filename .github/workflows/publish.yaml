@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+
+name: publish
+
+on:
+    release:
+        types:
+            - published
+
+jobs:
+    pypi:
+        name: pypi
+        if: github.repository_owner == 'juftin'
+        runs-on: ubuntu-latest
+        environment:
+            name: pypi
+            url: https://pypi.org/p/dunkr
+        permissions:
+            id-token: write
+        steps:
+            - name: build
+              uses: juftin/actions/taskfile@v1
+              with:
+                  checkout: true
+                  setup-uv: true
+                  task: dist
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+            - name: pypi
+              uses: pypa/gh-action-pypi-publish@release/v1

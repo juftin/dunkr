@@ -1,7 +1,7 @@
 <h1 align="center">dunkr</h1>
 
 <p align="center">
-    the spiritual successor to dunk
+the spiritual successor to dunk
 </p>
 
 <p align="center">
